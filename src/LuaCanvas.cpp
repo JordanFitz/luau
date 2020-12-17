@@ -118,4 +118,42 @@ int LuaCanvas::add_event_listener(lua_State* lua)
     return 0;
 }
 
+int LuaCanvas::max_framerate(lua_State* lua)
+{
+    CHECK_INITIALIZED();
+
+    if (lua_gettop(lua) == 0)
+    {
+        lua_pushinteger(lua, s_canvas->maxFramerate());
+        return 1;
+    }
+
+    CHECK_ARG_COUNT(1);
+
+    auto framerate = static_cast<unsigned int>(luaL_checkinteger(lua, 1));
+
+    s_canvas->maxFramerate(framerate);
+
+    return 0;
+}
+
+int LuaCanvas::use_vsync(lua_State* lua)
+{
+    CHECK_INITIALIZED();
+
+    if (lua_gettop(lua) == 0)
+    {
+        lua_pushboolean(lua, s_canvas->vsync());
+        return 1;
+    }
+
+    CHECK_ARG_COUNT(1);
+
+    bool vsync = lua_toboolean(lua, 1);
+
+    s_canvas->vsync(vsync);
+
+    return 0;
+}
+
 }

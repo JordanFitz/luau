@@ -38,11 +38,15 @@ private:
     void _insertInteger(const std::string&, int);
     void _insertNumber(const std::string&, float);
     void _insertString(const std::string&, const std::string&);
+    void _insertData(const std::string&, void*);
 
     bool _luaRender();
-    bool _luaUpdate();
+    bool _luaUpdate(float);
 
     void _addFunctionToTable(const std::string&, int(*proc)(lua_State*));
+
+    // For use in Lua
+    static int get_modifier_state(lua_State*);
 };
 }
 

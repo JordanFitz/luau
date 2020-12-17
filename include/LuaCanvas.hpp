@@ -17,6 +17,10 @@ public:
     static int background_color(lua_State*);
     static int load_font(lua_State*);
 
+    static int use_vsync(lua_State*);
+    static int max_framerate(lua_State*);
+
+    // Not in use
     static int add_event_listener(lua_State*);
 
 private:

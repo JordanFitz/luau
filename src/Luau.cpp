@@ -33,6 +33,8 @@ Luau::Luau()
         _addFunctionToTable("height", LuaCanvas::height);
         _addFunctionToTable("background_color", LuaCanvas::background_color);
         _addFunctionToTable("load_font", LuaCanvas::load_font);
+        _addFunctionToTable("max_framerate", LuaCanvas::max_framerate);
+        _addFunctionToTable("use_vsync", LuaCanvas::use_vsync);
     }
     lua_setglobal(m_lua, "canvas");
 
@@ -91,12 +93,12 @@ int Luau::run(const std::string& scriptPath)
         RETURN_CANVAS_INIT;
     }
 
-    m_canvas.hookRender([&](Canvas::Canvas& canvas) {
-        _luaRender();
+    m_canvas.hookUpdate([&](Canvas::Canvas& canvas, float delta) {
+        _luaUpdate(delta);
     });
 
-    m_canvas.hookUpdate([&](Canvas::Canvas& canvas) {
-        _luaUpdate();
+    m_canvas.hookRender([&](Canvas::Canvas& canvas) {
+        _luaRender();
     });
 
     RETURN_CANVAS_INIT;
@@ -113,7 +115,7 @@ bool Luau::_checkResult(lua_State* lua, int result)
 {
     if (result != LUA_OK)
     {
-        printf("Lua error: %s\n", lua_tostring(lua, -1));
+        printf("%s\n", lua_tostring(lua, -1));
         return false;
     }
 
@@ -197,14 +199,26 @@ bool Luau::_luaRender()
     return _callGlobal("render");
 }
 
-bool Luau::_luaUpdate()
+bool Luau::_luaUpdate(float delta)
 {
-    return _callGlobal("update");
+    if (!_checkGlobal("update"))
+        return false;
+
+    lua_pushnumber(m_lua, static_cast<lua_Number>(delta));
+    
+    if (!_checkResult(m_lua, lua_pcall(m_lua, 1, 0, 0)))
+        return false;
+
+    lua_pop(m_lua, 1);
+
+    return true;
 }
 
 void Luau::_eventToTable(const Canvas::Event& e)
 {
     lua_newtable(m_lua);
+
+    _insertData("ptr", (void*)(&e));
 
     switch (e.type())
     {
@@ -221,6 +235,8 @@ void Luau::_eventToTable(const Canvas::Event& e)
 
         _insertString("key", event.key());
         _insertString("code", event.code());
+
+        _addFunctionToTable("get_modifier_state", get_modifier_state);
 
         break;
     }
@@ -259,6 +275,13 @@ void Luau::_eventToTable(const Canvas::Event& e)
     }
 }
 
+void Luau::_insertData(const std::string& name, void* value)
+{
+    lua_pushstring(m_lua, name.c_str());
+    lua_pushlightuserdata(m_lua, value);
+    lua_settable(m_lua, -3);
+}
+
 void Luau::_insertBoolean(const std::string& name, bool value)
 {
     lua_pushstring(m_lua, name.c_str());
@@ -285,6 +308,33 @@ void Luau::_insertNumber(const std::string& name, float value)
     lua_pushstring(m_lua, name.c_str());
     lua_pushnumber(m_lua, static_cast<lua_Number>(value));
     lua_settable(m_lua, -3);
+}
+
+int Luau::get_modifier_state(lua_State* lua)
+{
+    if (lua_gettop(lua) != 2)
+    {
+        printf("Wrong number of arguments to 'get_modifier_state()'\n");
+        return 0;
+    }
+
+    if (!lua_istable(lua, 1))
+    {
+        luaL_typeerror(lua, 1, "table");
+        return 0;
+    }
+
+    auto key = luaL_checkstring(lua, 2);
+
+    lua_getfield(lua, 1, "ptr");
+
+    auto ptr = lua_touserdata(lua, -1);
+
+    auto event = static_cast<Canvas::KeyboardEvent*>(ptr);
+
+    lua_pushboolean(lua, event->getModifierState(key));
+
+    return 1;
 }
 
 }

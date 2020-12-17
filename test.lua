@@ -4,27 +4,29 @@ offset = {}
 offset.x = 0
 offset.y = 0
 
-move_amt = 0.1
+move_amt = 100
 
 function is_key_down(name)
     return keys[name] ~= nil and keys[name]
 end
 
-function canvas.update()
+function canvas.update(delta)
+    m = move_amt * delta
+
     if is_key_down("ArrowUp") then
-        offset.y = offset.y - move_amt
+        offset.y = offset.y - m
     end
 
     if is_key_down("ArrowDown") then
-        offset.y = offset.y + move_amt
+        offset.y = offset.y + m
     end
 
     if is_key_down("ArrowRight") then
-        offset.x = offset.x + move_amt
+        offset.x = offset.x + m
     end
 
     if is_key_down("ArrowLeft") then
-        offset.x = offset.x - move_amt
+        offset.x = offset.x - m
     end
 end
 
@@ -45,6 +47,8 @@ end
 
 canvas.width(1280)
 canvas.height(720)
+canvas.use_vsync(true)
+canvas.max_framerate(60)
 
 function canvas.onkeydown(event)
     keys[event.code] = true
