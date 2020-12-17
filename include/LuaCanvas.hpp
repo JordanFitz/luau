@@ -12,9 +12,10 @@ class LuaCanvas
 public:
     static void initialize(Canvas::Canvas*);
 
-    static int set_width(lua_State*);
-    static int set_height(lua_State*);
-    static int set_background_color(lua_State*);
+    static int width(lua_State*);
+    static int height(lua_State*);
+    static int background_color(lua_State*);
+    static int load_font(lua_State*);
 
     // TODO: addEventListener
 

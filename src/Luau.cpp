@@ -26,17 +26,38 @@ Luau::Luau()
     m_lua = luaL_newstate();
     luaL_openlibs(m_lua);
     
+    // 'canvas' table
     lua_newtable(m_lua);
     {
-        _addFunctionToTable("width", LuaCanvas::set_width);
-        _addFunctionToTable("height", LuaCanvas::set_height);
-        _addFunctionToTable("background_color", LuaCanvas::set_background_color);
+        _addFunctionToTable("width", LuaCanvas::width);
+        _addFunctionToTable("height", LuaCanvas::height);
+        _addFunctionToTable("background_color", LuaCanvas::background_color);
+        _addFunctionToTable("load_font", LuaCanvas::load_font);
     }
     lua_setglobal(m_lua, "canvas");
 
+    // 'context' table
     lua_newtable(m_lua);
     {
+        _addFunctionToTable("fill_style", LuaContext::fill_style);
+        _addFunctionToTable("stroke_style", LuaContext::stroke_style);
+        _addFunctionToTable("line_width", LuaContext::line_width);
+        _addFunctionToTable("line_join", LuaContext::line_join);
+        _addFunctionToTable("line_cap", LuaContext::line_cap);
         _addFunctionToTable("clear_rect", LuaContext::clear_rect);
+        _addFunctionToTable("fill_rect", LuaContext::fill_rect);
+        _addFunctionToTable("stroke_rect", LuaContext::stroke_rect);
+        _addFunctionToTable("font", LuaContext::font);
+        _addFunctionToTable("fill_text", LuaContext::fill_text);
+        _addFunctionToTable("stroke_text", LuaContext::stroke_text);
+        _addFunctionToTable("begin_path", LuaContext::begin_path);
+        _addFunctionToTable("move_to", LuaContext::move_to);
+        _addFunctionToTable("line_to", LuaContext::line_to);
+        _addFunctionToTable("rect", LuaContext::rect);
+        _addFunctionToTable("stroke", LuaContext::stroke);
+        _addFunctionToTable("fill", LuaContext::fill);
+        _addFunctionToTable("close_path", LuaContext::close_path);
+        _addFunctionToTable("arc", LuaContext::arc);
     }
     lua_setglobal(m_lua, "context");
 }

@@ -15,11 +15,13 @@ if (s_canvas == nullptr)                                 \
 }
 
 // TODO: Make this error message more informative.
-#define CHECK_ARG_COUNT(count)              \
-if (lua_gettop(lua) != count)               \
-{                                           \
-    printf("Wrong number of arguments!\n"); \
-    return 0;                               \
+//       Not sure if __func__ is appropriate in all
+//       cases?
+#define CHECK_ARG_COUNT(count)                                 \
+if (lua_gettop(lua) != count)                                  \
+{                                                              \
+    printf("Wrong number of arguments to '%s()'\n", __func__); \
+    return 0;                                                  \
 }
 
 namespace Luau
@@ -31,7 +33,7 @@ void LuaCanvas::initialize(Canvas::Canvas* canvas)
     s_canvas = canvas;
 }
 
-int LuaCanvas::set_width(lua_State* lua)
+int LuaCanvas::width(lua_State* lua)
 {
     CHECK_INITIALIZED();
 
@@ -49,7 +51,7 @@ int LuaCanvas::set_width(lua_State* lua)
     return 0;
 }
 
-int LuaCanvas::set_height(lua_State* lua)
+int LuaCanvas::height(lua_State* lua)
 {
     CHECK_INITIALIZED();
 
@@ -67,7 +69,7 @@ int LuaCanvas::set_height(lua_State* lua)
     return 0;
 }
 
-int LuaCanvas::set_background_color(lua_State* lua)
+int LuaCanvas::background_color(lua_State* lua)
 {
     CHECK_INITIALIZED();
 
@@ -81,6 +83,19 @@ int LuaCanvas::set_background_color(lua_State* lua)
 
     auto color = luaL_checkstring(lua, 1);
     s_canvas->backgroundColor(color);
+
+    return 0;
+}
+
+int LuaCanvas::load_font(lua_State* lua)
+{
+    CHECK_INITIALIZED();
+    CHECK_ARG_COUNT(2);
+
+    auto name = luaL_checkstring(lua, 1);
+    auto path = luaL_checkstring(lua, 2);
+
+    s_canvas->loadFont(name, path);
 
     return 0;
 }
