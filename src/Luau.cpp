@@ -60,11 +60,46 @@ Luau::Luau()
         _addFunctionToTable("arc", LuaContext::arc);
     }
     lua_setglobal(m_lua, "context");
+
+    auto eventHandler = [&](const Canvas::Event& e) { _handleEvent(e); };
+
+    m_canvas.addEventListener("unload", eventHandler);
+    m_canvas.addEventListener("resize", eventHandler);
+    m_canvas.addEventListener("keydown", eventHandler);
+    m_canvas.addEventListener("keyup", eventHandler);
+    m_canvas.addEventListener("mousedown", eventHandler);
+    m_canvas.addEventListener("mouseup", eventHandler);
+    m_canvas.addEventListener("mousemove", eventHandler);
+    m_canvas.addEventListener("wheel", eventHandler);
+    m_canvas.addEventListener("focus", eventHandler);
+    m_canvas.addEventListener("blur", eventHandler);
 }
 
 Luau::~Luau()
 {
     lua_close(m_lua);
+}
+
+int Luau::run(const std::string& scriptPath)
+{
+    if (!_checkResult(m_lua, luaL_dofile(m_lua, scriptPath.c_str())))
+        RETURN_CANVAS_INIT;
+
+    if (!_checkGlobal("render") || !_checkGlobal("update"))
+    {
+        printf("You must define both canvas.update and canvas.render functions\n");
+        RETURN_CANVAS_INIT;
+    }
+
+    m_canvas.hookRender([&](Canvas::Canvas& canvas) {
+        _luaRender();
+    });
+
+    m_canvas.hookUpdate([&](Canvas::Canvas& canvas) {
+        _luaUpdate();
+    });
+
+    RETURN_CANVAS_INIT;
 }
 
 void Luau::_addFunctionToTable(const std::string& name, int(*proc)(lua_State*))
@@ -105,7 +140,7 @@ bool Luau::_getContextTable()
     return _getGlobalTable("context");
 }
 
-bool Luau::_checkUserDefined(const std::string& name)
+bool Luau::_checkGlobal(const std::string& name, bool printError)
 {
     if (!_getCanvasTable())
     {
@@ -118,58 +153,138 @@ bool Luau::_checkUserDefined(const std::string& name)
 
     if (!lua_isfunction(m_lua, -1))
     {
-        printf("Failed to find function 'canvas.%s'\n", name.c_str());
+        if(printError)
+            printf("Failed to find function 'canvas.%s'\n", name.c_str());
         return false;
     }
 
     return true;
 }
 
-bool Luau::_callUserDefined(const std::string& name)
+bool Luau::_callGlobal(const std::string& name)
 {
-    if (!_checkUserDefined(name))
+    if (!_checkGlobal(name))
         return false;
 
     // Call the function with no arguments and no return value
     if (!_checkResult(m_lua, lua_pcall(m_lua, 0, 0, 0)))
         return false;
 
-    // Seems like you have to pop the return value of, even
+    // Seems like you have to pop the return value off, even
     // when there isn't one
     lua_pop(m_lua, 1);
 
     return true;
 }
 
+void Luau::_handleEvent(const Canvas::Event& e)
+{
+    const std::string name = "on" + e.name();
+
+    if (!_checkGlobal(name, false))
+        return;
+
+    _eventToTable(e);
+
+    if (!_checkResult(m_lua, lua_pcall(m_lua, 1, 0, 0)))
+        return;
+
+    lua_pop(m_lua, 1);
+}
+
 bool Luau::_luaRender()
 {
-    return _callUserDefined("render");
+    return _callGlobal("render");
 }
 
 bool Luau::_luaUpdate()
 {
-    return _callUserDefined("update");
+    return _callGlobal("update");
 }
 
-int Luau::run(const std::string& scriptPath)
+void Luau::_eventToTable(const Canvas::Event& e)
 {
-    if (!_checkResult(m_lua, luaL_dofile(m_lua, scriptPath.c_str())))
-        RETURN_CANVAS_INIT;
+    lua_newtable(m_lua);
 
-    if(!_checkUserDefined("render") || !_checkUserDefined("update"))
+    switch (e.type())
     {
-        printf("You must define both canvas.update and canvas.render functions\n");
-        RETURN_CANVAS_INIT;
+    case Canvas::EventType::Keyboard:
+    {
+        auto& event = Canvas::eventAs<Canvas::KeyboardEvent>(e);
+
+        _insertBoolean("altKey", event.altKey());
+        _insertBoolean("ctrlKey", event.ctrlKey());
+        _insertBoolean("shiftKey", event.shiftKey());
+        _insertBoolean("metaKey", event.metaKey());
+
+        // TODO: getModifierState
+
+        _insertString("key", event.key());
+        _insertString("code", event.code());
+
+        break;
     }
 
-    m_canvas.hookRender([&](Canvas::Canvas& canvas) {
-        _luaRender();
-    });
+    case Canvas::EventType::Mouse:
+    {
+        auto& event = Canvas::eventAs<Canvas::MouseEvent>(e);
 
-    m_canvas.hookUpdate([&](Canvas::Canvas& canvas) {
-        _luaUpdate();
-    });
+        _insertInteger("button", event.button());
+        _insertInteger("buttons", event.buttons());
 
-    RETURN_CANVAS_INIT;
+        _insertInteger("clientX", event.clientX());
+        _insertInteger("clientY", event.clientY());
+        _insertInteger("screenX", event.screenX());
+        _insertInteger("screenY", event.screenY());
+
+        _insertBoolean("altKey", event.altKey());
+        _insertBoolean("ctrlKey", event.ctrlKey());
+        _insertBoolean("shiftKey", event.shiftKey());
+        _insertBoolean("metaKey", event.metaKey());
+
+        break;
+    }
+
+    case Canvas::EventType::Wheel:
+    {
+        auto& event = Canvas::eventAs<Canvas::WheelEvent>(e);
+
+        _insertNumber("deltaX", event.deltaX());
+        _insertNumber("deltaY", event.deltaY());
+
+        break;
+    }
+
+    default: break;
+    }
 }
+
+void Luau::_insertBoolean(const std::string& name, bool value)
+{
+    lua_pushstring(m_lua, name.c_str());
+    lua_pushboolean(m_lua, value);
+    lua_settable(m_lua, -3);
+}
+
+void Luau::_insertString(const std::string& name, const std::string& value)
+{
+    lua_pushstring(m_lua, name.c_str());
+    lua_pushstring(m_lua, value.c_str());
+    lua_settable(m_lua, -3);
+}
+
+void Luau::_insertInteger(const std::string& name, int value)
+{
+    lua_pushstring(m_lua, name.c_str());
+    lua_pushinteger(m_lua, value);
+    lua_settable(m_lua, -3);
+}
+
+void Luau::_insertNumber(const std::string& name, float value)
+{
+    lua_pushstring(m_lua, name.c_str());
+    lua_pushnumber(m_lua, static_cast<lua_Number>(value));
+    lua_settable(m_lua, -3);
+}
+
 }

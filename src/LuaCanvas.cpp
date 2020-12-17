@@ -99,4 +99,23 @@ int LuaCanvas::load_font(lua_State* lua)
 
     return 0;
 }
+
+int LuaCanvas::add_event_listener(lua_State* lua)
+{
+    CHECK_INITIALIZED();
+    CHECK_ARG_COUNT(-1);
+
+    auto name = luaL_checkstring(lua, 1);
+    
+    // There is no luaL_checkfunction. I think this does
+    // basically the same thing as checkfunction would.
+    if (!lua_isfunction(lua, 2))
+    {
+        luaL_typeerror(lua, 2, "function");
+        return 0;
+    }
+
+    return 0;
+}
+
 }

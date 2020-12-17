@@ -17,7 +17,7 @@ public:
     static int background_color(lua_State*);
     static int load_font(lua_State*);
 
-    // TODO: addEventListener
+    static int add_event_listener(lua_State*);
 
 private:
     static Canvas::Canvas* s_canvas;

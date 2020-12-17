@@ -28,8 +28,16 @@ private:
     bool _getCanvasTable();
     bool _getContextTable();
 
-    bool _checkUserDefined(const std::string&);
-    bool _callUserDefined(const std::string&);
+    bool _checkGlobal(const std::string&, bool p = true);
+    bool _callGlobal(const std::string&);
+
+    void _handleEvent(const Canvas::Event&);
+    void _eventToTable(const Canvas::Event&);
+
+    void _insertBoolean(const std::string&, bool);
+    void _insertInteger(const std::string&, int);
+    void _insertNumber(const std::string&, float);
+    void _insertString(const std::string&, const std::string&);
 
     bool _luaRender();
     bool _luaUpdate();

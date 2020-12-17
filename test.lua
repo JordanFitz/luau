@@ -1,21 +1,55 @@
+keys = {}
+
+offset = {}
+offset.x = 0
+offset.y = 0
+
+move_amt = 0.1
+
+function is_key_down(name)
+    return keys[name] ~= nil and keys[name]
+end
+
 function canvas.update()
-    
+    if is_key_down("ArrowUp") then
+        offset.y = offset.y - move_amt
+    end
+
+    if is_key_down("ArrowDown") then
+        offset.y = offset.y + move_amt
+    end
+
+    if is_key_down("ArrowRight") then
+        offset.x = offset.x + move_amt
+    end
+
+    if is_key_down("ArrowLeft") then
+        offset.x = offset.x - move_amt
+    end
 end
 
 function canvas.render()
     context.clear_rect()
 
     context.line_width(10)
-    context.stroke_rect(75, 140, 150, 110)
-    context.fill_rect(130, 190, 40, 60)
+    context.stroke_rect(offset.x + 75, offset.y + 140, 150, 110)
+    context.fill_rect(offset.x + 130,  offset.y + 190, 40, 60)
 
     context.begin_path()
-    context.move_to(50, 140)
-    context.line_to(150, 60)
-    context.line_to(250, 140)
+    context.move_to(offset.x + 50, offset.y + 140)
+    context.line_to(offset.x + 150, offset.y + 60)
+    context.line_to(offset.x + 250, offset.y + 140)
     context.close_path()
     context.stroke()
 end
 
 canvas.width(1280)
 canvas.height(720)
+
+function canvas.onkeydown(event)
+    keys[event.code] = true
+end
+
+function canvas.onkeyup(event)
+    keys[event.code] = false
+end
