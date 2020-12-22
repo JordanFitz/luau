@@ -42,8 +42,12 @@ public:
     static int measure_text(lua_State*);
     static int create_linear_gradient(lua_State*);
 
+    static int add_color_stop(lua_State*);
+    static int gradient_delete(lua_State*);
+
 private:
     static Canvas::Context* s_context;
+    static std::vector<Canvas::CanvasGradient> s_gradients;
 };
 }
 

@@ -157,6 +157,7 @@
     <ClInclude Include="include\LuaCanvas.hpp" />
     <ClInclude Include="include\LuaContext.hpp" />
     <ClInclude Include="include\Luau.hpp" />
+    <ClInclude Include="include\Util.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

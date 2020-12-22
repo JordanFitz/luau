@@ -5,6 +5,9 @@ extern "C"
 #include "lualib.h"
 }
 
+#include "TextMetrics.hpp"
+
+#include "Util.hpp"
 #include "LuaContext.hpp"
 
 #define CHECK_INITIALIZED()                               \
@@ -25,6 +28,7 @@ if (lua_gettop(lua) != count)                                  \
 namespace Luau
 {
 Canvas::Context* LuaContext::s_context = nullptr;
+std::vector<Canvas::CanvasGradient> LuaContext::s_gradients;
 
 void LuaContext::initialize(Canvas::Context* context)
 {
@@ -65,8 +69,18 @@ int LuaContext::fill_style(lua_State* lua)
 
     CHECK_ARG_COUNT(1);
 
-    auto style = luaL_checkstring(lua, 1);
-    s_context->fillStyle(style);
+    if (lua_isstring(lua, 1))
+    {
+        auto style = luaL_checkstring(lua, 1);
+        s_context->fillStyle(style);
+    }
+    else if (lua_istable(lua, 1))
+    {
+        lua_getfield(lua, 1, "ptr");
+        auto ptr = lua_touserdata(lua, -1);
+        auto gradient = static_cast<Canvas::CanvasGradient*>(ptr);
+        s_context->fillStyle(*gradient);
+    }
 
     return 0;
 }
@@ -169,6 +183,75 @@ int LuaContext::stroke_rect(lua_State* lua)
     float h = static_cast<float>(luaL_checknumber(lua, 4));
 
     s_context->strokeRect(x, y, w, h);
+
+    return 0;
+}
+
+int LuaContext::draw_image(lua_State* lua)
+{
+    CHECK_INITIALIZED();
+
+    if (lua_gettop(lua) == 3 || lua_gettop(lua) == 5|| lua_gettop(lua) == 9)
+    {
+        if (!lua_istable(lua, 1))
+        {
+            luaL_typeerror(lua, 1, "table");
+            return 0;
+        }
+
+        if (lua_gettop(lua) == 3)
+        {
+            float dx = static_cast<float>(luaL_checknumber(lua, 2));
+            float dy = static_cast<float>(luaL_checknumber(lua, 3));
+
+            lua_getfield(lua, 1, "ptr");
+            auto ptr = lua_touserdata(lua, -1);
+            auto image = static_cast<Canvas::Image*>(ptr);
+
+            s_context->drawImage(*image, dx, dy);
+
+            return 0;
+        }
+
+        if (lua_gettop(lua) == 5)
+        {
+            float dx = static_cast<float>(luaL_checknumber(lua, 2));
+            float dy = static_cast<float>(luaL_checknumber(lua, 3));
+            float dWidth = static_cast<float>(luaL_checknumber(lua, 4));
+            float dHeight = static_cast<float>(luaL_checknumber(lua, 5));
+
+            lua_getfield(lua, 1, "ptr");
+            auto ptr = lua_touserdata(lua, -1);
+            auto image = static_cast<Canvas::Image*>(ptr);
+
+            s_context->drawImage(*image, dx, dy, dWidth, dHeight);
+
+            return 0;
+        }
+
+        if (lua_gettop(lua) == 9)
+        {
+            float sx = static_cast<float>(luaL_checknumber(lua, 2));
+            float sy = static_cast<float>(luaL_checknumber(lua, 3));
+            float sWidth = static_cast<float>(luaL_checknumber(lua, 4));
+            float sHeight = static_cast<float>(luaL_checknumber(lua, 5));
+
+            float dx = static_cast<float>(luaL_checknumber(lua, 6));
+            float dy = static_cast<float>(luaL_checknumber(lua, 7));
+            float dWidth = static_cast<float>(luaL_checknumber(lua, 8));
+            float dHeight = static_cast<float>(luaL_checknumber(lua, 9));
+
+            lua_getfield(lua, 1, "ptr");
+            auto ptr = lua_touserdata(lua, -1);
+            auto image = static_cast<Canvas::Image*>(ptr);
+
+            s_context->drawImage(*image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+
+            return 0;
+        }
+    }
+
+    CHECK_ARG_COUNT(-1);
 
     return 0;
 }
@@ -328,4 +411,92 @@ int LuaContext::arc(lua_State* lua)
     return 0;
 }
 
+int LuaContext::measure_text(lua_State* lua)
+{
+    CHECK_INITIALIZED();
+    CHECK_ARG_COUNT(1);
+
+    auto text = luaL_checkstring(lua, 1);
+    auto metric = s_context->measureText(text);
+
+    lua_newtable(lua);
+    {
+        Util::insertNumber(lua, "width", metric.width);
+    }
+
+    return 1;
+}
+
+int LuaContext::create_linear_gradient(lua_State* lua)
+{
+    CHECK_INITIALIZED();
+    CHECK_ARG_COUNT(4);
+
+    float x1 = static_cast<float>(luaL_checknumber(lua, 1));
+    float y1 = static_cast<float>(luaL_checknumber(lua, 2));
+    float x2 = static_cast<float>(luaL_checknumber(lua, 3));
+    float y2 = static_cast<float>(luaL_checknumber(lua, 4));
+
+    auto gradient = new Canvas::CanvasGradient(s_context, x1, y1, x2, y2);
+
+    lua_newtable(lua);
+    {
+        Util::insertData(lua, "ptr", gradient);
+        Util::insertFunction(lua, "add_color_stop", add_color_stop);
+
+        lua_newtable(lua);
+        {
+            Util::insertFunction(lua, "__gc", gradient_delete);
+            lua_setmetatable(lua, -2);
+        }
+    }
+
+    return 1;
+}
+
+int LuaContext::gradient_delete(lua_State* lua)
+{
+    CHECK_INITIALIZED();
+    CHECK_ARG_COUNT(1);
+
+    if (!lua_istable(lua, 1))
+    {
+        luaL_typeerror(lua, 1, "table");
+        return 0;
+    }
+
+    lua_getfield(lua, 1, "ptr");
+    auto ptr = lua_touserdata(lua, -1);
+    auto gradient = static_cast<Canvas::CanvasGradient*>(ptr);
+
+    printf("delete %p\n", gradient);
+
+    delete gradient;
+
+    return 0;
+}
+
+int LuaContext::add_color_stop(lua_State* lua)
+{
+    CHECK_INITIALIZED();
+    CHECK_ARG_COUNT(3);
+
+    if (!lua_istable(lua, 1))
+    {
+        luaL_typeerror(lua, 1, "table");
+        return 0;
+    }
+
+    float offset = static_cast<float>(luaL_checknumber(lua, 2));
+    auto color = luaL_checkstring(lua, 3);
+
+    lua_getfield(lua, 1, "ptr");
+    auto ptr = lua_touserdata(lua, -1);
+    auto gradient = static_cast<Canvas::CanvasGradient*>(ptr);
+
+    printf("%.2f, %s\n", offset, color);
+    gradient->addColorStop(offset, color);
+
+    return 0;
+}
 }

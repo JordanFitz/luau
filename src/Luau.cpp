@@ -8,9 +8,12 @@ extern "C"
 #include <string>
 
 #include "Canvas.hpp"
+#include "Image.hpp"
 
 #include "LuaCanvas.hpp"
 #include "LuaContext.hpp"
+
+#include "Util.hpp"
 
 #include "Luau.hpp"
 
@@ -49,6 +52,7 @@ Luau::Luau()
         _addFunctionToTable("clear_rect", LuaContext::clear_rect);
         _addFunctionToTable("fill_rect", LuaContext::fill_rect);
         _addFunctionToTable("stroke_rect", LuaContext::stroke_rect);
+        _addFunctionToTable("draw_image", LuaContext::draw_image);
         _addFunctionToTable("font", LuaContext::font);
         _addFunctionToTable("fill_text", LuaContext::fill_text);
         _addFunctionToTable("stroke_text", LuaContext::stroke_text);
@@ -60,8 +64,17 @@ Luau::Luau()
         _addFunctionToTable("fill", LuaContext::fill);
         _addFunctionToTable("close_path", LuaContext::close_path);
         _addFunctionToTable("arc", LuaContext::arc);
+        _addFunctionToTable("measure_text", LuaContext::measure_text);
+        _addFunctionToTable("create_linear_gradient", LuaContext::create_linear_gradient);
     }
     lua_setglobal(m_lua, "context");
+
+    // Image table
+    lua_newtable(m_lua);
+    {
+        _addFunctionToTable("new", Static::image_new);
+    }
+    lua_setglobal(m_lua, "Image");
 
     auto eventHandler = [&](const Canvas::Event& e) { _handleEvent(e); };
 
@@ -106,9 +119,7 @@ int Luau::run(const std::string& scriptPath)
 
 void Luau::_addFunctionToTable(const std::string& name, int(*proc)(lua_State*))
 {
-    lua_pushstring(m_lua, name.c_str());
-    lua_pushcfunction(m_lua, proc);
-    lua_settable(m_lua, -3);
+    Util::insertFunction(m_lua, name, proc);
 }
 
 bool Luau::_checkResult(lua_State* lua, int result)
@@ -218,7 +229,7 @@ void Luau::_eventToTable(const Canvas::Event& e)
 {
     lua_newtable(m_lua);
 
-    _insertData("ptr", (void*)(&e));
+    Util::insertData(m_lua, "ptr", (void*)(&e));
 
     switch (e.type())
     {
@@ -226,17 +237,17 @@ void Luau::_eventToTable(const Canvas::Event& e)
     {
         auto& event = Canvas::eventAs<Canvas::KeyboardEvent>(e);
 
-        _insertBoolean("altKey", event.altKey());
-        _insertBoolean("ctrlKey", event.ctrlKey());
-        _insertBoolean("shiftKey", event.shiftKey());
-        _insertBoolean("metaKey", event.metaKey());
+        Util::insertBoolean(m_lua, "altKey", event.altKey());
+        Util::insertBoolean(m_lua, "ctrlKey", event.ctrlKey());
+        Util::insertBoolean(m_lua, "shiftKey", event.shiftKey());
+        Util::insertBoolean(m_lua, "metaKey", event.metaKey());
 
         // TODO: getModifierState
 
-        _insertString("key", event.key());
-        _insertString("code", event.code());
+        Util::insertString(m_lua, "key", event.key());
+        Util::insertString(m_lua, "code", event.code());
 
-        _addFunctionToTable("get_modifier_state", get_modifier_state);
+        _addFunctionToTable("get_modifier_state", Static::get_modifier_state);
 
         break;
     }
@@ -245,18 +256,18 @@ void Luau::_eventToTable(const Canvas::Event& e)
     {
         auto& event = Canvas::eventAs<Canvas::MouseEvent>(e);
 
-        _insertInteger("button", event.button());
-        _insertInteger("buttons", event.buttons());
+        Util::insertInteger(m_lua, "button", event.button());
+        Util::insertInteger(m_lua, "buttons", event.buttons());
 
-        _insertInteger("clientX", event.clientX());
-        _insertInteger("clientY", event.clientY());
-        _insertInteger("screenX", event.screenX());
-        _insertInteger("screenY", event.screenY());
+        Util::insertInteger(m_lua, "clientX", event.clientX());
+        Util::insertInteger(m_lua, "clientY", event.clientY());
+        Util::insertInteger(m_lua, "screenX", event.screenX());
+        Util::insertInteger(m_lua, "screenY", event.screenY());
 
-        _insertBoolean("altKey", event.altKey());
-        _insertBoolean("ctrlKey", event.ctrlKey());
-        _insertBoolean("shiftKey", event.shiftKey());
-        _insertBoolean("metaKey", event.metaKey());
+        Util::insertBoolean(m_lua, "altKey", event.altKey());
+        Util::insertBoolean(m_lua, "ctrlKey", event.ctrlKey());
+        Util::insertBoolean(m_lua, "shiftKey", event.shiftKey());
+        Util::insertBoolean(m_lua, "metaKey", event.metaKey());
 
         break;
     }
@@ -265,8 +276,8 @@ void Luau::_eventToTable(const Canvas::Event& e)
     {
         auto& event = Canvas::eventAs<Canvas::WheelEvent>(e);
 
-        _insertNumber("deltaX", event.deltaX());
-        _insertNumber("deltaY", event.deltaY());
+        Util::insertNumber(m_lua, "deltaX", event.deltaX());
+        Util::insertNumber(m_lua, "deltaY", event.deltaY());
 
         break;
     }
@@ -275,42 +286,124 @@ void Luau::_eventToTable(const Canvas::Event& e)
     }
 }
 
-void Luau::_insertData(const std::string& name, void* value)
+
+
+// Static methods for use in Lua
+
+int Luau::Static::image_new(lua_State* lua)
 {
-    lua_pushstring(m_lua, name.c_str());
-    lua_pushlightuserdata(m_lua, value);
-    lua_settable(m_lua, -3);
+    if (lua_gettop(lua) != 1 && lua_gettop(lua) != 2)
+    {
+        printf("Wrong number of arguments to 'Image:new()'\n");
+        return 0;
+    }
+
+    if (!lua_istable(lua, 1))
+    {
+        luaL_typeerror(lua, 1, "table");
+        return 0;
+    }
+
+    const char* src = nullptr;
+
+    if (lua_gettop(lua) == 2)
+    {
+        src = luaL_checkstring(lua, 2);
+    }
+
+    Canvas::Image* image;
+
+    // I think it should be fine that these are never `delete`d because
+    // they can exist for the lifetime of the program?
+
+    if (src != nullptr)
+    {
+        image = new Canvas::Image(src);
+    }
+    else
+    {
+        image = new Canvas::Image();
+    }
+
+    lua_newtable(lua);
+    {
+        Util::insertData(lua, "ptr", image);
+        Util::insertFunction(lua, "src", image_src);
+
+        lua_newtable(lua);
+        Util::insertFunction(lua, "__gc", image_delete);
+        lua_setmetatable(lua, -2);
+    }
+
+    return 1;
 }
 
-void Luau::_insertBoolean(const std::string& name, bool value)
+int Luau::Static::image_delete(lua_State* lua)
 {
-    lua_pushstring(m_lua, name.c_str());
-    lua_pushboolean(m_lua, value);
-    lua_settable(m_lua, -3);
+    if (lua_gettop(lua) != 1)
+    {
+        printf("Wrong number of arguments to 'image:delete()'\n");
+        return 0;
+    }
+
+    if (!lua_istable(lua, 1))
+    {
+        luaL_typeerror(lua, 1, "table");
+        return 0;
+    }
+
+    lua_getfield(lua, 1, "ptr");
+
+    auto ptr = lua_touserdata(lua, -1);
+
+    auto image = static_cast<Canvas::Image*>(ptr);
+
+    printf("delete %p\n", image);
+
+    delete image;
+
+    return 0;
 }
 
-void Luau::_insertString(const std::string& name, const std::string& value)
+int Luau::Static::image_src(lua_State* lua)
 {
-    lua_pushstring(m_lua, name.c_str());
-    lua_pushstring(m_lua, value.c_str());
-    lua_settable(m_lua, -3);
+    if (lua_gettop(lua) != 1 && lua_gettop(lua) != 2)
+    {
+        printf("Wrong number of arguments to 'image:src()'\n");
+        return 0;
+    }
+
+    if (!lua_istable(lua, 1))
+    {
+        luaL_typeerror(lua, 1, "table");
+        return 0;
+    }
+
+    const char* src = nullptr;
+
+    if (lua_gettop(lua) == 2)
+    {
+        src = luaL_checkstring(lua, 2);
+    }
+
+    lua_getfield(lua, 1, "ptr");
+
+    auto ptr = lua_touserdata(lua, -1);
+
+    auto image = static_cast<Canvas::Image*>(ptr);
+
+    if (src != nullptr)
+    {
+        image->src(src);
+        return 0;
+    }
+
+    lua_pushstring(lua, image->src().c_str());
+
+    return 1;
 }
 
-void Luau::_insertInteger(const std::string& name, int value)
-{
-    lua_pushstring(m_lua, name.c_str());
-    lua_pushinteger(m_lua, value);
-    lua_settable(m_lua, -3);
-}
-
-void Luau::_insertNumber(const std::string& name, float value)
-{
-    lua_pushstring(m_lua, name.c_str());
-    lua_pushnumber(m_lua, static_cast<lua_Number>(value));
-    lua_settable(m_lua, -3);
-}
-
-int Luau::get_modifier_state(lua_State* lua)
+int Luau::Static::get_modifier_state(lua_State* lua)
 {
     if (lua_gettop(lua) != 2)
     {
@@ -336,5 +429,4 @@ int Luau::get_modifier_state(lua_State* lua)
 
     return 1;
 }
-
 }

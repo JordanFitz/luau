@@ -1,8 +1,23 @@
+img = Image:new("w:\\pictures\\download.png")
+
 keys = {}
 
 offset = {}
 offset.x = 0
 offset.y = 0
+
+canvas.width(1280)
+canvas.height(720)
+canvas.use_vsync(true)
+canvas.max_framerate(60)
+
+canvas.load_font("Arial", "w:\\dev\\canvas\\arial.ttf")
+context.font("30px Arial")
+
+grad = context.create_linear_gradient(20,0, 220,0)
+grad:add_color_stop(0, "green")
+grad:add_color_stop(0.5, "cyan")
+grad:add_color_stop(1, "green")
 
 move_amt = 100
 
@@ -33,6 +48,8 @@ end
 function canvas.render()
     context.clear_rect()
 
+    context.fill_style("red")
+    context.stroke_style("red")
     context.line_width(10)
     context.stroke_rect(offset.x + 75, offset.y + 140, 150, 110)
     context.fill_rect(offset.x + 130,  offset.y + 190, 40, 60)
@@ -43,12 +60,19 @@ function canvas.render()
     context.line_to(offset.x + 250, offset.y + 140)
     context.close_path()
     context.stroke()
+
+    context.draw_image(img, 400, 400)
+
+    context.fill_style("green")
+    context.fill_text("Hello, world", 300, 100)
+
+    context.line_width(1)
+    context.stroke_rect(301, 90, context.measure_text("Hello, world").width, 50)
+
+    context.fill_style(grad)
+    context.fill_rect(20, 20, 200, 100)
 end
 
-canvas.width(1280)
-canvas.height(720)
-canvas.use_vsync(true)
-canvas.max_framerate(60)
 
 function canvas.onkeydown(event)
     keys[event.code] = true
