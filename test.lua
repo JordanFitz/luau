@@ -15,32 +15,29 @@ canvas.load_font("Arial", "w:\\dev\\canvas\\arial.ttf")
 context.font("30px Arial")
 
 grad = context.create_linear_gradient(20,0, 220,0)
+
 grad:add_color_stop(0, "green")
 grad:add_color_stop(0.5, "cyan")
 grad:add_color_stop(1, "green")
 
 move_amt = 100
 
-function is_key_down(name)
-    return keys[name] ~= nil and keys[name]
-end
-
 function canvas.update(delta)
     m = move_amt * delta
 
-    if is_key_down("ArrowUp") then
+    if canvas.is_key_pressed("ArrowUp") then
         offset.y = offset.y - m
     end
 
-    if is_key_down("ArrowDown") then
+    if canvas.is_key_pressed("ArrowDown") then
         offset.y = offset.y + m
     end
 
-    if is_key_down("ArrowRight") then
+    if canvas.is_key_pressed("ArrowRight") then
         offset.x = offset.x + m
     end
 
-    if is_key_down("ArrowLeft") then
+    if canvas.is_key_pressed("ArrowLeft") then
         offset.x = offset.x - m
     end
 end
@@ -70,14 +67,5 @@ function canvas.render()
     context.stroke_rect(301, 90, context.measure_text("Hello, world").width, 50)
 
     context.fill_style(grad)
-    context.fill_rect(20, 20, 200, 100)
-end
-
-
-function canvas.onkeydown(event)
-    keys[event.code] = true
-end
-
-function canvas.onkeyup(event)
-    keys[event.code] = false
+    context.fill_rect(offset.x+20, offset.y+20, 200, 100)
 end

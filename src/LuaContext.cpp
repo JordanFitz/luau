@@ -469,8 +469,6 @@ int LuaContext::gradient_delete(lua_State* lua)
     auto ptr = lua_touserdata(lua, -1);
     auto gradient = static_cast<Canvas::CanvasGradient*>(ptr);
 
-    printf("delete %p\n", gradient);
-
     delete gradient;
 
     return 0;
@@ -494,7 +492,6 @@ int LuaContext::add_color_stop(lua_State* lua)
     auto ptr = lua_touserdata(lua, -1);
     auto gradient = static_cast<Canvas::CanvasGradient*>(ptr);
 
-    printf("%.2f, %s\n", offset, color);
     gradient->addColorStop(offset, color);
 
     return 0;

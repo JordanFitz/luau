@@ -1,7 +1,13 @@
 #include "Luau.hpp"
 
-int main(char** argv, int argc)
+int main(int argc, char** argv)
 {
     Luau::Luau luau;
-    return luau.run("test.lua");
+
+    if (argc == 1)
+    {
+        return luau.run("test.lua");
+    }
+    
+    return luau.run(argv[1]);
 }

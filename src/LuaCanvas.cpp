@@ -6,6 +6,7 @@ extern "C"
 }
 
 #include "LuaCanvas.hpp"
+#include "Event.hpp"
 
 #define CHECK_INITIALIZED()                              \
 if (s_canvas == nullptr)                                 \
@@ -108,7 +109,7 @@ int LuaCanvas::add_event_listener(lua_State* lua)
     auto name = luaL_checkstring(lua, 1);
     
     // There is no luaL_checkfunction. I think this does
-    // basically the same thing as checkfunction would.
+    // basically the same thing as checkfunction would, hypothetically.
     if (!lua_isfunction(lua, 2))
     {
         luaL_typeerror(lua, 2, "function");
@@ -154,6 +155,22 @@ int LuaCanvas::use_vsync(lua_State* lua)
     s_canvas->vsync(vsync);
 
     return 0;
+}
+
+int LuaCanvas::is_key_pressed(lua_State* lua)
+{
+    CHECK_INITIALIZED();
+    CHECK_ARG_COUNT(1);
+
+    //auto code = static_cast<unsigned int>(luaL_checkinteger(lua, 1));
+    auto code = luaL_checkstring(lua, 1);
+    auto pressed = s_canvas->_isKeyDown(
+        Canvas::KeyboardEvent::codeToKey(code)
+    );
+
+    lua_pushboolean(lua, pressed);
+
+    return 1;
 }
 
 }

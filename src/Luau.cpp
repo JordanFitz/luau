@@ -38,6 +38,7 @@ Luau::Luau()
         _addFunctionToTable("load_font", LuaCanvas::load_font);
         _addFunctionToTable("max_framerate", LuaCanvas::max_framerate);
         _addFunctionToTable("use_vsync", LuaCanvas::use_vsync);
+        _addFunctionToTable("is_key_pressed", LuaCanvas::is_key_pressed);
     }
     lua_setglobal(m_lua, "canvas");
 
@@ -357,8 +358,6 @@ int Luau::Static::image_delete(lua_State* lua)
     auto ptr = lua_touserdata(lua, -1);
 
     auto image = static_cast<Canvas::Image*>(ptr);
-
-    printf("delete %p\n", image);
 
     delete image;
 
