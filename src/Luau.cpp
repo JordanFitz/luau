@@ -96,6 +96,11 @@ Luau::~Luau()
     lua_close(m_lua);
 }
 
+Canvas::Canvas* Luau::canvas()
+{
+    return &m_canvas;
+}
+
 int Luau::run(const std::string& scriptPath)
 {
     if (!_checkResult(m_lua, luaL_dofile(m_lua, scriptPath.c_str())))

@@ -19,6 +19,8 @@ public:
 
     int run(const std::string&);
 
+    Canvas::Canvas* canvas();
+
 private:
     lua_State* m_lua;
     Canvas::Canvas m_canvas;

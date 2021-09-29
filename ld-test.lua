@@ -6,7 +6,7 @@ canvas.use_vsync(true)
 canvas.max_framerate(60)
 
 canvas.load_font("Arial", "w:\\dev\\canvas\\arial.ttf")
-context.font("20px Arial")context.fill_style("green")
+context.font("20px Arial")
 
 function canvas.update(delta)
     context.clear_rect()
