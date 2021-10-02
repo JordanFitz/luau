@@ -45,27 +45,32 @@ end
 function canvas.render()
     context.clear_rect()
 
-    context.fill_style("red")
-    context.stroke_style("red")
-    context.line_width(10)
-    context.stroke_rect(offset.x + 75, offset.y + 140, 150, 110)
-    context.fill_rect(offset.x + 130,  offset.y + 190, 40, 60)
+    --context.fill_style("red")
+    --context.stroke_style("red")
+    --context.line_width(10)
+    --context.stroke_rect(offset.x + 75, offset.y + 140, 150, 110)
+    --context.fill_rect(offset.x + 130,  offset.y + 190, 40, 60)
+    --
+    --context.begin_path()
+    --context.move_to(offset.x + 50, offset.y + 140)
+    --context.line_to(offset.x + 150, offset.y + 60)
+    --context.line_to(offset.x + 250, offset.y + 140)
+    --context.close_path()
+    --context.stroke()
+    --
+    --context.draw_image(img, 400, 400)
+    --
+    --context.fill_style("green")
+    --context.fill_text("Hello, world", 300, 100)
+    --
+    --context.line_width(1)
+    --context.stroke_rect(301, 90, context.measure_text("Hello, world").width, 50)
+    --
+    --context.fill_style(grad)
+    --context.fill_rect(offset.x+20, offset.y+20, 200, 100)
 
+    context.fill_style("black")
     context.begin_path()
-    context.move_to(offset.x + 50, offset.y + 140)
-    context.line_to(offset.x + 150, offset.y + 60)
-    context.line_to(offset.x + 250, offset.y + 140)
-    context.close_path()
-    context.stroke()
-
-    context.draw_image(img, 400, 400)
-
-    context.fill_style("green")
-    context.fill_text("Hello, world", 300, 100)
-
-    context.line_width(1)
-    context.stroke_rect(301, 90, context.measure_text("Hello, world").width, 50)
-
-    context.fill_style(grad)
-    context.fill_rect(offset.x+20, offset.y+20, 200, 100)
+    context.arc(50, 50, 20, 0, 0)
+    context.fill()
 end

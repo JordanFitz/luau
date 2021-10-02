@@ -39,6 +39,7 @@ Luau::Luau()
         _addFunctionToTable("max_framerate", LuaCanvas::max_framerate);
         _addFunctionToTable("use_vsync", LuaCanvas::use_vsync);
         _addFunctionToTable("is_key_pressed", LuaCanvas::is_key_pressed);
+        _addFunctionToTable("title", LuaCanvas::title);
     }
     lua_setglobal(m_lua, "canvas");
 

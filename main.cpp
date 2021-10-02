@@ -3,7 +3,7 @@
 int main(int argc, char** argv)
 {
     int result = 0;
-    bool reset = false;
+    bool reset;
     
     do
     {
@@ -14,9 +14,9 @@ int main(int argc, char** argv)
         luau->canvas()->addEventListener("keydown", [&](const Canvas::Event& e) {
             if (Canvas::eventAs<Canvas::KeyboardEvent>(e).code() == "F5")
             {
-                luau->canvas()->close();
+                printf("\n  !!! Reloading...\n\n");
                 reset = true;
-                printf("!!! Reloading...\n");
+                luau->canvas()->close();
             }
         });
 

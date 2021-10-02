@@ -173,4 +173,22 @@ int LuaCanvas::is_key_pressed(lua_State* lua)
     return 1;
 }
 
+int LuaCanvas::title(lua_State* lua)
+{
+    CHECK_INITIALIZED();
+
+    if (lua_gettop(lua) == 0)
+    {
+        lua_pushstring(lua, s_canvas->title().c_str());
+        return 1;
+    }
+
+    CHECK_ARG_COUNT(1);
+
+    auto title = luaL_checkstring(lua, 1);
+    s_canvas->title(title);
+
+    return 0;
+}
+
 }
