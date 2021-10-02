@@ -9,6 +9,7 @@ extern "C"
 
 #include "Canvas.hpp"
 #include "Image.hpp"
+#include "Audio.hpp"
 
 #include "LuaCanvas.hpp"
 #include "LuaContext.hpp"
@@ -77,6 +78,13 @@ Luau::Luau()
         _addFunctionToTable("new", Static::image_new);
     }
     lua_setglobal(m_lua, "Image");
+
+    // Audio table
+    lua_newtable(m_lua);
+    {
+        _addFunctionToTable("new", Static::audio_new);
+    }
+    lua_setglobal(m_lua, "Audio");
 
     auto eventHandler = [&](const Canvas::Event& e) { _handleEvent(e); };
 
@@ -345,6 +353,7 @@ int Luau::Static::image_new(lua_State* lua)
     return 1;
 }
 
+
 int Luau::Static::image_delete(lua_State* lua)
 {
     if (lua_gettop(lua) != 1)
@@ -407,6 +416,194 @@ int Luau::Static::image_src(lua_State* lua)
 
     return 1;
 }
+
+
+int Luau::Static::audio_new(lua_State* lua)
+{
+    if (lua_gettop(lua) != 1 && lua_gettop(lua) != 2 && lua_gettop(lua) != 3)
+    {
+        printf("Wrong number of arguments to 'Audio:new()'\n");
+        return 0;
+    }
+
+    if (!lua_istable(lua, 1))
+    {
+        luaL_typeerror(lua, 1, "table");
+        return 0;
+    }
+
+    const char* src = nullptr;
+    bool stream = false;
+
+    if (lua_gettop(lua) > 1)
+    {
+        src = luaL_checkstring(lua, 2);
+    }
+
+    if (lua_gettop(lua) == 3)
+    {
+        stream = lua_toboolean(lua, 3);
+    }
+
+    Canvas::Audio* audio;
+
+    if (src != nullptr)
+    {
+        audio = new Canvas::Audio(src, stream);
+    }
+    else
+    {
+        audio = new Canvas::Audio();
+    }
+
+    lua_newtable(lua);
+    {
+        Util::insertData(lua, "ptr", audio);
+        Util::insertFunction(lua, "src", audio_src);
+        Util::insertFunction(lua, "play", audio_play);
+        Util::insertFunction(lua, "pause", audio_pause);
+        Util::insertFunction(lua, "stop", audio_stop);
+
+        lua_newtable(lua);
+        Util::insertFunction(lua, "__gc", audio_delete);
+        lua_setmetatable(lua, -2);
+    }
+
+    return 1;
+}
+
+int Luau::Static::audio_delete(lua_State* lua)
+{
+    if (lua_gettop(lua) != 1)
+    {
+        printf("Wrong number of arguments to 'audio:delete()'\n");
+        return 0;
+    }
+
+    if (!lua_istable(lua, 1))
+    {
+        luaL_typeerror(lua, 1, "table");
+        return 0;
+    }
+
+    lua_getfield(lua, 1, "ptr");
+
+    auto ptr = lua_touserdata(lua, -1);
+
+    auto audio = static_cast<Canvas::Audio*>(ptr);
+
+    delete audio;
+
+    return 0;
+}
+
+int Luau::Static::audio_src(lua_State* lua)
+{
+    if (lua_gettop(lua) != 1 && lua_gettop(lua) != 2)
+    {
+        printf("Wrong number of arguments to 'audio:src()'\n");
+        return 0;
+    }
+
+    if (!lua_istable(lua, 1))
+    {
+        luaL_typeerror(lua, 1, "table");
+        return 0;
+    }
+
+    const char* src = nullptr;
+
+    if (lua_gettop(lua) == 2)
+    {
+        src = luaL_checkstring(lua, 2);
+    }
+
+    lua_getfield(lua, 1, "ptr");
+
+    auto ptr = lua_touserdata(lua, -1);
+
+    auto audio = static_cast<Canvas::Audio*>(ptr);
+
+    if (src != nullptr)
+    {
+        audio->src(src);
+        return 0;
+    }
+
+    lua_pushstring(lua, audio->src().c_str());
+
+    return 1;
+}
+
+int Luau::Static::audio_play(lua_State* lua)
+{
+    if (lua_gettop(lua) != 1)
+    {
+        printf("Wrong number of arguments to 'audio:play()'\n");
+        return 0;
+    }
+
+    if (!lua_istable(lua, 1))
+    {
+        luaL_typeerror(lua, 1, "table");
+        return 0;
+    }
+
+    lua_getfield(lua, 1, "ptr");
+
+    auto ptr = lua_touserdata(lua, -1);
+
+    static_cast<Canvas::Audio*>(ptr)->play();
+
+    return 0;
+}
+
+int Luau::Static::audio_pause(lua_State* lua)
+{
+    if (lua_gettop(lua) != 1)
+    {
+        printf("Wrong number of arguments to 'audio:pause()'\n");
+        return 0;
+    }
+
+    if (!lua_istable(lua, 1))
+    {
+        luaL_typeerror(lua, 1, "table");
+        return 0;
+    }
+
+    lua_getfield(lua, 1, "ptr");
+
+    auto ptr = lua_touserdata(lua, -1);
+
+    static_cast<Canvas::Audio*>(ptr)->pause();
+
+    return 0;
+}
+
+int Luau::Static::audio_stop(lua_State* lua)
+{
+    if (lua_gettop(lua) != 1)
+    {
+        printf("Wrong number of arguments to 'audio:stop()'\n");
+        return 0;
+    }
+
+    if (!lua_istable(lua, 1))
+    {
+        luaL_typeerror(lua, 1, "table");
+        return 0;
+    }
+
+    lua_getfield(lua, 1, "ptr");
+
+    auto ptr = lua_touserdata(lua, -1);
+
+    static_cast<Canvas::Audio*>(ptr)->stop();
+
+    return 0;
+}
+
 
 int Luau::Static::get_modifier_state(lua_State* lua)
 {

@@ -51,6 +51,14 @@ private:
         static int image_new(lua_State*);
         static int image_src(lua_State*);
         static int image_delete(lua_State*);
+
+        static int audio_new(lua_State*);
+        static int audio_src(lua_State*);
+        static int audio_stream(lua_State*);
+        static int audio_play(lua_State*);
+        static int audio_pause(lua_State*);
+        static int audio_stop(lua_State*);
+        static int audio_delete(lua_State*);
     };
 };
 }
