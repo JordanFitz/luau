@@ -63,7 +63,7 @@ int LuaContext::fill_style(lua_State* lua)
 
     if (lua_gettop(lua) == 0)
     {
-        lua_pushstring(lua, s_context->fillStyle().c_str());
+        lua_pushstring(lua, s_context->fillStyle());
         return 1;
     }
 
@@ -91,7 +91,7 @@ int LuaContext::stroke_style(lua_State* lua)
 
     if (lua_gettop(lua) == 0)
     {
-        lua_pushstring(lua, s_context->strokeStyle().c_str());
+        lua_pushstring(lua, s_context->strokeStyle());
         return 1;
     }
 
