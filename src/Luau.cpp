@@ -41,6 +41,9 @@ Luau::Luau()
         _addFunctionToTable("use_vsync", LuaCanvas::use_vsync);
         _addFunctionToTable("is_key_pressed", LuaCanvas::is_key_pressed);
         _addFunctionToTable("title", LuaCanvas::title);
+
+        // TODO: Maybe this should be a context method rather than canvas?
+        _addFunctionToTable("view_position", LuaCanvas::view_position);
     }
     lua_setglobal(m_lua, "canvas");
 
@@ -463,6 +466,7 @@ int Luau::Static::audio_new(lua_State* lua)
         Util::insertFunction(lua, "play", audio_play);
         Util::insertFunction(lua, "pause", audio_pause);
         Util::insertFunction(lua, "stop", audio_stop);
+        Util::insertFunction(lua, "playing", audio_playing);
 
         lua_newtable(lua);
         Util::insertFunction(lua, "__gc", audio_delete);
@@ -602,6 +606,30 @@ int Luau::Static::audio_stop(lua_State* lua)
     static_cast<Canvas::Audio*>(ptr)->stop();
 
     return 0;
+}
+
+int Luau::Static::audio_playing(lua_State* lua)
+{
+    if (lua_gettop(lua) != 1)
+    {
+        printf("Wrong number of arguments to 'audio:playing()'\n");
+        return 0;
+    }
+
+    if (!lua_istable(lua, 1))
+    {
+        luaL_typeerror(lua, 1, "table");
+        return 0;
+    }
+
+    lua_getfield(lua, 1, "ptr");
+
+    auto ptr = lua_touserdata(lua, -1);
+    bool playing = static_cast<Canvas::Audio*>(ptr)->playing();
+
+    lua_pushboolean(lua, playing);
+
+    return 1;
 }
 
 

@@ -21,6 +21,7 @@ public:
     static int max_framerate(lua_State*);
 
     static int title(lua_State*);
+    static int view_position(lua_State*);
 
     static int is_key_pressed(lua_State*);
 

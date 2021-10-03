@@ -7,6 +7,7 @@ extern "C"
 
 #include "LuaCanvas.hpp"
 #include "Event.hpp"
+#include "Util.hpp"
 
 #define CHECK_INITIALIZED()                              \
 if (s_canvas == nullptr)                                 \
@@ -153,6 +154,33 @@ int LuaCanvas::use_vsync(lua_State* lua)
     bool vsync = lua_toboolean(lua, 1);
 
     s_canvas->vsync(vsync);
+
+    return 0;
+}
+
+int LuaCanvas::view_position(lua_State* lua)
+{
+    CHECK_INITIALIZED();
+
+    if (lua_gettop(lua) == 0)
+    {
+        auto viewPosition = s_canvas->viewPosition();
+
+        lua_newtable(lua);
+        {
+            Util::insertNumber(lua, "x", viewPosition.x);
+            Util::insertNumber(lua, "y", viewPosition.y);
+        }
+
+        return 1;
+    }
+
+    CHECK_ARG_COUNT(2);
+
+    auto x = static_cast<float>(luaL_checknumber(lua, 1));
+    auto y = static_cast<float>(luaL_checknumber(lua, 2));
+
+    s_canvas->viewPosition(x, y);
 
     return 0;
 }
