@@ -54,12 +54,13 @@ private:
 
         static int audio_new(lua_State*);
         static int audio_src(lua_State*);
-        //static int audio_stream(lua_State*);
+        static int audio_stream(lua_State*s);
         static int audio_play(lua_State*);
         static int audio_pause(lua_State*);
         static int audio_stop(lua_State*);
         static int audio_delete(lua_State*);
         static int audio_playing(lua_State*);
+        static int audio_volume(lua_State*);
     };
 };
 }

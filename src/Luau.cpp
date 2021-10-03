@@ -467,6 +467,8 @@ int Luau::Static::audio_new(lua_State* lua)
         Util::insertFunction(lua, "pause", audio_pause);
         Util::insertFunction(lua, "stop", audio_stop);
         Util::insertFunction(lua, "playing", audio_playing);
+        Util::insertFunction(lua, "volume", audio_volume);
+        Util::insertFunction(lua, "stream", audio_stream);
 
         lua_newtable(lua);
         Util::insertFunction(lua, "__gc", audio_delete);
@@ -630,6 +632,77 @@ int Luau::Static::audio_playing(lua_State* lua)
     lua_pushboolean(lua, playing);
 
     return 1;
+}
+
+int Luau::Static::audio_stream(lua_State* lua)
+{
+    if (lua_gettop(lua) != 1 && lua_gettop(lua) != 2)
+    {
+        printf("Wrong number of arguments to 'audio:stream()'\n");
+        return 0;
+    }
+
+    bool updateStream = lua_gettop(lua) == 2;
+
+    if (!lua_istable(lua, 1))
+    {
+        luaL_typeerror(lua, 1, "table");
+        return 0;
+    }
+
+    lua_getfield(lua, 1, "ptr");
+
+    auto ptr = lua_touserdata(lua, -1);
+    
+    if (!updateStream)
+    {
+        bool stream = static_cast<Canvas::Audio*>(ptr)->stream();
+
+        lua_pushboolean(lua, stream);
+
+        return 1;
+    }
+
+    bool stream = lua_toboolean(lua, 2);
+
+    static_cast<Canvas::Audio*>(ptr)->stream(stream);
+
+    return 0;
+}
+
+int Luau::Static::audio_volume(lua_State* lua)
+{
+    if (lua_gettop(lua) != 1 && lua_gettop(lua) != 2)
+    {
+        printf("Wrong number of arguments to 'audio:volume()'\n");
+        return 0;
+    }
+
+    bool updateVolume = lua_gettop(lua) == 2;
+
+    if (!lua_istable(lua, 1))
+    {
+        luaL_typeerror(lua, 1, "table");
+        return 0;
+    }
+
+    lua_getfield(lua, 1, "ptr");
+
+    auto ptr = lua_touserdata(lua, -1);
+
+    if(!updateVolume)
+    {
+        float volume = static_cast<Canvas::Audio*>(ptr)->volume();
+
+        lua_pushnumber(lua, volume);
+
+        return 1;
+    }
+
+    float volume = static_cast<float>(luaL_checknumber(lua, 2));
+    static_cast<Canvas::Audio*>(ptr)->volume(volume);
+
+    return 0;
 }
 
 
